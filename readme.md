@@ -1,68 +1,163 @@
+# 项目结构一览
+
+```
+Alpha/
+  ├── data_process/
+  │    ├── 1_PrepareMonthlyData.py
+  │    ├── 2_AdjData.py
+  │    └── 3_CalculateFactor.py
+  │
+  ├── func/
+  │    ├── AdjustStock.py
+  │    ├── CalculateFactor.py
+  │    ├── ConcatDataByMonth.py
+  │    └── SelectStock.py
+  │
+  ├── log/
+  │    └── adjustment_log.txt
+  │
+  ├── temp_data/
+  │    ├── Data/
+  │    ├── Price/
+  │    ├── mergedData/
+  │    ├── adjustedData/
+  │    └── adjustment.parquet
+  │
+  ├── LightGBM/
+  │    ├── mian.py
+  │    ├── config/
+  │    │    └── settings.py
+  │    ├── data/
+  │    │    └── data_loader.py
+  │
+  └── pegformer/
+       ├── __init__.py
+       ├── model/
+       │    ├── __init__.py
+       │    ├── patch_embedding.py
+       │    ├── transformer_encoder.py
+       │    ├── gru_decoder.py
+       │    └── pegformer.py
+       └── utils/
+            ├── __init__.py
+            ├── config.py
+            └── model_utils.py
+```
+
+
+
 # 项目内容介绍
 
 ## func 文件夹
 
-为实现函数功能的文件，只提供各个函数功能的实现，不负责具体的任务流程
+**为实现函数功能的文件，只提供各个函数功能的实现，不负责具体的任务流程**
 
 > [!TIP]
 >
-> 1. `CalculateFactor.py`：计算股票因子的功能函数
+> - **CalculateFactor.py**：计算股票因子的功能函数
 >
->    - **class MinuteFactorCalculator**：用于计算计算股票因子的类
+> - **class MinuteFactorCalculator**：用于计算计算股票因子的类
 >      - **calculate_factors()**：计算指定的因子(支持同时提交多个因子表达式来计算多个因子、支持一个df里有多支股票同时计算因子)
 >      - **get_factors_by_stock(stock_code)**：获取指定股票的因子数据
->    - **def Alpha158_factor()**：用于创建Alpha158因子
->      - 输入参数：无
->      - 返回参数1： (列表) Alpha158因子的计算表达式(与参数2是一一对应关系)
->      - 返回参数2：(列表) Alpha158因子的因子名称(与参数1是一一对应关系)
 >
+>      - **def Alpha158_factor()**：用于创建Alpha158因子
+>
+>    - **ConcatDataByMonth.py**：用于按月份合并数据的功能函数
 >    
 >
-> 2. `SelectStock.py`：用于选取指定的股票数据
->
->    - **def setTimeRange()**: 用于筛选某个时间段内的交易数据
->      - 输入参数：
->        - file_path：存放所有时间的股票数据的文件夹地址
->        - file_type：文件的类型(例如parquet,h5,xls,xlsx),可以传递列表,比如['xls', 'xlsx']
->        - start: 开始日期, 若开始日期没有交易记录, 则往后(未来)自动延申
->        - end:   结束日期, 若结束日期没有交易记录, 则往前(过去)自动延伸
->      - 返回参数: (列表) 按时间升序排列的选中交易记录文件路径列表
->    - **def areFileListsIdentical(lst1, lst2)**：两个列表分别存放了某一个时间段的不同交易数据，本函数用于判断两个不同的交易数据在时间上是否一致，会不会出现lst1有某一天的数据但lst2却没有收录进来的错误情况
->      - 输入参数:
->        - lst1:存放第一种交易数据的列表
->        - lst2:存放第二种交易数据的列表
->      - 返回参数: (布尔值) True:二者相同、False:二者存在不同
->    - **def selectByCode(df, target_codes, code_col='code')**：根据目标股票代码列表筛选DataFrame，兼容多种股票代码格式，返回匹配结果和未找到的代码
->      - 输入参数:
->        - df: 原始股票数据DataFrame，需包含股票代码列
->        - target_codes: 目标股票代码列表，支持多种格式：
->          - 带市场后缀：['000001.SZ', '000002.SH']
->          - 纯数字字符串：['000001', '000002']、['1', '2']
->          - 整数：\[1, 2, 000001\]（注意：整数1会被转为'000001'补全6位）
->      - 返回参数: (元组) (匹配目标代码的DataFrame, 未找到的股票代码列表)
->
-> 3. 
+> - **SelectStock.py**：用于灵活地按时间进行划分股票数据集的功能函数
+> - **AdjustStock.py**：股票数据复权函数，包含优化后的实现方式
 
 
 
 ## data_process 文件夹
 
-为计算或处理数据集的脚本文件
+**为计算或处理数据集的脚本文件**
 
 > [!IMPORTANT]
 >
-> - **CalculateAdjustmentFactor.py**：计算复权因子的脚本
-> - **CalculateFactor.py**：计算数据集的因子值的脚本
+> - **0_CalculateAdjustmentFactor.py**：计算股票每日的复权因子的脚本
+> - **1_PrepareMonthlyData.py**：先按年月日范围获划分定数据，再按月份合并数据的脚本
+>   - 按时间划分数据时会灵活的匹配，若起始日期当天没有交易数据，则会往后（未来）自动寻找最近的交易日作为第一条数据，若截止日期当天没有交易数据，则会往前（过去）自动寻找最近的交易日作为最后一条数据，在日期选择上比较灵活，会自动修正无交易数据的情况
+>   - 为了方便因子计算，每个月都会包含上一个月最后一次交易日的信息，例如7月份的交易数据里会包含6月份最后一天的交易数据，6月份的交易数据里会包含5月份最后一天的交易数据，从而既不用将数据合并成一个单一的大文件，也不会让跨窗口计算的因子因为月份而中断
+> - **2_AdjData.py**：对准备好的、按月份处理过的分钟级交易数据进行复权操作的脚本，复权 ['open'、'close'、'high'、'low'、'volume'] 列
+> - **3_CalculateFactor.py**：计算复权后的数据集的因子值的脚本
 
 
 
-## temp_data 文件夹
+## temp_data 文件夹（数据已忽略上传）
 
-存放计算、处理好的中间数据的文件夹
+**存放计算、处理好的中间数据的文件夹**
 
 > [!CAUTION]
 >
 > - **adjustment_temp.parquet**：将原始数据和复权后的数据整合在一起的临时文件
-> - **adjsutment.parquet**： 存放计算好的复权因子的文件
+> - **adjustment.parquet**： 存放计算好的复权因子的文件
 > - **factors.xlsx**：存放计算好的股票因子值的文件
 
+### Data 子文件夹
+
+> [!CAUTION]
+>
+> 存放按月份处理后的Data文件
+>
+> - **202507.parquet**
+> - **202508.parquet**
+> - **......**
+
+### Price 子文件夹
+
+> [!CAUTION]
+>
+> 存放按月份处理后的Price文件
+>
+> - **202507.parquet**
+> - **202508.parquet**
+> - **......**
+
+### mergedData 子文件夹
+
+> [!CAUTION]
+>
+> 存放按要求合并后的Data和Price数据的文件
+>
+> - **202507.parquet**
+> - **202508.parquet**
+> - **......**
+
+### adjustedData 子文件夹
+
+> [!CAUTION]
+>
+> 存放复权后的mergedData文件
+>
+> - **202507.parquet**
+> - **202508.parquet**
+> - **......**
+
+
+
+
+
+## pegformer 文件夹
+
+**存放pegformer模型相关的实现代码**
+
+### utils 子文件夹
+
+**存放模型的通用功能模块**
+
+> [!NOTE]
+>
+> 
+
+### model 子文件夹
+
+**存放模型结构、训练、评估相关代码，是深度学习项目的核心逻辑层**
+
+> [!NOTE]
+>
+> - **patch_embedding.py**：pegformer的embedding层，将分钟数据按照patch_size切分成多个片段，然后进行embedding
+> - **transformer_encoder.py**：transformer的编码器模块，用于捕获时序数据之间存在的潜在关系
+> - **gru_decode.py**：门控循环单元（GRU）解码器模块
+> - **pegformer.py**：pegformer模型的模型结构

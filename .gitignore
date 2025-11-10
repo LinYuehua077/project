@@ -1,0 +1,11 @@
+# 日志文件
+*log.txt
+
+# 数据文件
+*.parquet
+*.xls
+*.factors.xlsx
+
+# 测试用代码文件
+*.ipynb
+test.py
