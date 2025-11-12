@@ -4,8 +4,12 @@
 # 数据文件
 *.parquet
 *.xls
-*.factors.xlsx
+*.xlsx
 
-# 测试用代码文件
+# 测试用代码
 *.ipynb
 test.py
+
+# cache文件
+*checkpoints
+__pycache__
