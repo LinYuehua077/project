@@ -198,7 +198,7 @@ class MinuteFactorCalculator:
         # 如果数据中有code列，也加入到计算环境
         if 'code' in df.columns:
             local_vars['code'] = df['code']
-            
+        
         # 安全地计算表达式
         try:
             result = eval(formula, {'__builtins__': {}}, local_vars)

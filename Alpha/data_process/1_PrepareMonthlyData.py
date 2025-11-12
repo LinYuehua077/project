@@ -24,11 +24,6 @@ if prepare_data:
     if not ss.areFileListsIdentical:
         raise ValueError('两个数据集的内容对不上，存在差异')
 
-    # 设置要测试的股票代码
-    # 选取20250130创业板指.xls提供的股票代码为例, 共100支股票
-    df = pd.read_excel('../temp_data/20250103创业板指.xls')
-    target_code = ss.getCodeList(df)
-
     # 生成从起始年月到截止年月之间的所有月份信息
     target_months = cdbm.generateMonthRange(2024, 1, 2025, 11)
     print(f"处理月份范围: {len(target_months)} 个月")
@@ -40,15 +35,18 @@ if prepare_data:
     for i, (year, month) in enumerate(target_months):
         print(f"\n处理第 {i+1}/{len(target_months)} 个周期: {year}年{month}月")
 
-        # 判断是否需要包含上个月数据：不是第一个处理周期就需要
+        # 判断是否需要包含上个月数据：除去第一个月，都要包含上个月的数据
         include_previous = (i > 0)
-
-        monthly_data = cdbm.processMonthlyData(
+        # 判断是否需要包含下个月数据：除去最后一个月，都要包含下个月的数据
+        include_next = (i < len(target_months) - 1)
+        
+        monthly_data = processMonthlyData(
             file_path_lst=file_path_lst,
             year=year,
             month=month,
-            data_type='price',
-            include_previous_last_day=include_previous
+            data_type='data',  # 根据实际情况指定数据类型
+            include_previous_last_day=include_previous,
+            include_next_first_day=include_next
         )
 
         if monthly_data is not None:
@@ -103,29 +101,3 @@ if merge_data:
             # 保存结果，文件名包含年份信息
             output_file = f"../temp_data/mergedData/{data_lst[i]}"
             merged_df.to_parquet(output_file)
-
-    
-    
-    
-# # 检查哪些股票存在数据缺失
-# loss_code = set()
-# for pf in tqdm(price_files):
-#     df = pd.read_parquet(pf)
-#     temp_loss_code = ss.checkCodeinDf(df, target_code)
-#     loss_code.update(temp_loss_code)
-
-# for df in tqdm(data_files):
-#     df = pd.read_parquet(df)
-#     temp_loss_code = ss.checkCodeinDf(df, target_code)
-
-# loss_code = sorted(list(loss_code))
-# print(loss_code)
-
-# for pf in tqdm(price_files):
-#     df = pd.read_parquet(pf)
-#     df100, not_found_codes = ss.selectByCode(df,target_code)
-#     # 测试时发现没有['302132 中航成飞']的交易数据，实际获取到的股票数据只有99支
-#     print(pf.split('/')[-1],not_found_codes)
-    
-    
-# print(len(target_code), target_code)

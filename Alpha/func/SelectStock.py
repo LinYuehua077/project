@@ -199,7 +199,7 @@ def selectByCode(df, target_codes, code_col=None, keep_type=True):
         tuple: (匹配目标代码的DataFrame, 未找到的股票代码列表)
     """
     # 找到列名
-    code_col = findCodeCol(df, code_col)       
+    code_col = findCodeColname(df, code_col)       
     
     # 预处理目标代码——统一转为「6位纯数字字符串」
     processed_targets = []
@@ -232,21 +232,24 @@ def selectByCode(df, target_codes, code_col=None, keep_type=True):
     return matched_df, not_found_codes
 
 
-def checkCodeinDf(df, target_code,code_col=None):
+def checkCodeinDf(df, target_code, code_col=None):
     """
     检查target_code中的股票代码是否全都包含在df中
     输入参数：
         df：包含了多支股票交易信息的DataFrame
         target_code：要查询的股票code列表
-        code_col:包含股票代码的列名
+        code_col: 包含股票代码的列名
     返回值:
-        List[str]：不在df中的股票代码code
+        tuple: (filtered_target_codes, not_found_codes)
+            filtered_target_codes: List[str] - 去掉not_found_codes之后的target_codes
+            not_found_codes: List[str] - 不在df中的股票代码code
     """
     # 找到列名
-    code_col = findCodeCol(df, code_col)
+    code_col = findCodeColname(df, code_col)
     
     # 处理目标代码：标准化+去重
     standardized_targets = list({standardizeCode(code) for code in target_code if standardizeCode(code)})
+    # print(f"target_code = ", target_code)
     
     # 标准化df中的股票代码，统一格式后去重，减少对比量
     df_code_set = set(
@@ -254,10 +257,14 @@ def checkCodeinDf(df, target_code,code_col=None):
             lambda x: standardizeCode(x)
         ).unique()
     )
-    
+    # print(f"df_code_set = ", df_code_set)
     # 筛选为匹配到的股票代码
     not_found_codes = [code for code in standardized_targets if code not in df_code_set]
-    return not_found_codes
+    
+    # 获取过滤后的target_codes（存在于df中的代码）
+    filtered_target_codes = [code for code in standardized_targets if code in df_code_set]
+    
+    return filtered_target_codes, not_found_codes
     
 
 
